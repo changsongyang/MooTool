@@ -91,6 +91,8 @@ public class HttpRequestForm {
     private JSplitPane historySplitPane;
     private JScrollPane historyTableScrollPane;
     private JPanel historyPanel;
+    private JButton importCurlButton;
+    private JButton bodyFormatButton;
 
     private static final Log logger = LogFactory.get();
     private static HttpRequestForm httpRequestForm;
@@ -133,6 +135,13 @@ public class HttpRequestForm {
         httpRequestForm.getDeleteHistoryButton().setIcon(new FlatSVGIcon("icon/remove.svg"));
         httpRequestForm.getCloseHistoryLabel().setIcon(new FlatSVGIcon("icon/remove2.svg"));
 
+        // 将尾随组件按钮添加到 URL 字段以导入 cURL
+        httpRequestForm.importCurlButton = new JButton("CURL");
+        httpRequestForm.importCurlButton.setToolTipText("导入 cURL");
+        httpRequestForm.importCurlButton.setFocusable(false);
+        httpRequestForm.getUrlTextField().putClientProperty(FlatClientProperties.TEXT_FIELD_TRAILING_COMPONENT,
+                httpRequestForm.importCurlButton);
+
         httpRequestForm.getSplitPane().setDividerLocation((int) (App.mainFrame.getWidth() / 5));
         httpRequestForm.getNoteListTable().setRowHeight(UiConsts.TABLE_ROW_HEIGHT);
 
@@ -145,6 +154,151 @@ public class HttpRequestForm {
         httpRequestForm.getHistoryPanel().setVisible(false);
 
         httpRequestForm.getHttpRequestPanel().updateUI();
+
+        // 将正文格式按钮添加到“正文”选项卡中（替换右上角的间隔符）
+        try {
+            int bodyTabIndex = httpRequestForm.getTabbedPane1().indexOfTab("Body");
+            if (bodyTabIndex >= 0) {
+                Component tabComp = httpRequestForm.getTabbedPane1().getComponentAt(bodyTabIndex);
+                if (tabComp instanceof JPanel) {
+                    JPanel panel17 = (JPanel) tabComp;
+                    if (panel17.getComponentCount() > 0 && panel17.getComponent(0) instanceof JPanel) {
+                        JPanel panel18 = (JPanel) panel17.getComponent(0);
+                        // remove spacer in (0,1) if exists
+                        for (Component c : panel18.getComponents()) {
+                            if (c instanceof Spacer) {
+                                panel18.remove(c);
+                                break;
+                            }
+                        }
+                        httpRequestForm.bodyFormatButton = new JButton();
+                        httpRequestForm.bodyFormatButton.setToolTipText("格式化 Body");
+                        httpRequestForm.bodyFormatButton.setIcon(new FlatSVGIcon("icon/format_painter.svg"));
+                        panel18.add(httpRequestForm.bodyFormatButton,
+                                new GridConstraints(0, 1, 1, 1,
+                                        GridConstraints.ANCHOR_CENTER,
+                                        GridConstraints.FILL_NONE,
+                                        GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW,
+                                        GridConstraints.SIZEPOLICY_FIXED,
+                                        null, null, null, 0, false));
+                        panel18.revalidate();
+                        panel18.repaint();
+                    }
+                }
+            }
+        } catch (Exception ignore) {
+            // ignore safe
+        }
+    }
+
+    /**
+     * 将导入的请求信息应用到表单
+     */
+    public static void applyImportedRequest(com.luoboduner.moo.tool.util.CurlParserUtil.CurlResult r) {
+        if (r == null) {
+            return;
+        }
+
+        // Method & URL
+        if (r.getMethod() != null) {
+            getInstance().getMethodComboBox().setSelectedItem(r.getMethod());
+            switchMethod(r.getMethod());
+        }
+        if (r.getUrl() != null) {
+            getInstance().getUrlTextField().setText(r.getUrl());
+        }
+
+        // Body
+        getInstance().getBodyTextArea().setText(r.getBody() == null ? "" : r.getBody());
+
+        // Body type from Content-Type header
+        setBodyTypeFromContentType(r.getContentType());
+
+        // Headers
+        initHeaderTable();
+        DefaultTableModel headerModel = (DefaultTableModel) getInstance().getHeaderTable().getModel();
+        if (r.getHeaders() != null) {
+            for (com.luoboduner.moo.tool.util.CurlParserUtil.NameValue h : r.getHeaders()) {
+                headerModel.addRow(new Object[]{h.getName(), h.getValue()});
+            }
+        }
+
+        // Cookies
+        initCookieTable();
+        DefaultTableModel cookieModel = (DefaultTableModel) getInstance().getCookieTable().getModel();
+        if (r.getCookies() != null) {
+            for (com.luoboduner.moo.tool.util.CurlParserUtil.NameValue c : r.getCookies()) {
+                cookieModel.addRow(new Object[]{c.getName(), c.getValue(), "", "", ""});
+            }
+        }
+    }
+
+    /**
+     * 根据Content-Type设置Body类型
+     */
+    private static void setBodyTypeFromContentType(String contentType) {
+        if (contentType == null) {
+            return;
+        }
+        String ct = contentType.toLowerCase();
+        JComboBox combo = getInstance().getBodyTypeComboBox();
+        if (ct.contains("application/json")) {
+            combo.setSelectedItem("application/json");
+        } else if (ct.contains("text/plain")) {
+            combo.setSelectedItem("text/plain");
+        } else if (ct.contains("application/xml")) {
+            combo.setSelectedItem("application/xml");
+        } else if (ct.contains("text/xml")) {
+            combo.setSelectedItem("text/xml");
+        } else if (ct.contains("text/html")) {
+            combo.setSelectedItem("text/html");
+        } else if (ct.contains("javascript")) {
+            combo.setSelectedItem("application/javascript");
+        }
+    }
+
+    /**
+     * 从URL中提取查询参数并填充到Params表中
+     */
+    public static void splitQueryToParamTable(String url) {
+        if (url == null || url.trim().isEmpty()) {
+            return;
+        }
+        int qIdx = url.indexOf('?');
+        if (qIdx < 0) {
+            return;
+        }
+        String query = url.substring(qIdx + 1);
+        int fragIdx = query.indexOf('#');
+        if (fragIdx >= 0) {
+            query = query.substring(0, fragIdx);
+        }
+        if (query.trim().isEmpty()) {
+            return;
+        }
+        initParamTable();
+        DefaultTableModel paramModel = (DefaultTableModel) getInstance().getParamTable().getModel();
+        String[] pairs = query.split("&");
+        for (String pair : pairs) {
+            if (pair.isEmpty()) continue;
+            String name;
+            String value;
+            int eq = pair.indexOf('=');
+            if (eq >= 0) {
+                name = pair.substring(0, eq);
+                value = pair.substring(eq + 1);
+            } else {
+                name = pair;
+                value = "";
+            }
+            try {
+                name = java.net.URLDecoder.decode(name, "UTF-8");
+                value = java.net.URLDecoder.decode(value, "UTF-8");
+            } catch (Exception e) {
+                logger.error(e.toString());
+            }
+            paramModel.addRow(new Object[]{name, value});
+        }
     }
 
     public static void initMsg(String msgName) {
