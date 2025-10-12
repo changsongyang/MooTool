@@ -32,6 +32,7 @@ import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableColumnModel;
 import javax.swing.text.StyleContext;
 import java.awt.*;
+import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -91,8 +92,8 @@ public class HttpRequestForm {
     private JSplitPane historySplitPane;
     private JScrollPane historyTableScrollPane;
     private JPanel historyPanel;
-    private JButton importCurlButton;
     private JButton bodyFormatButton;
+    private JButton importCurlButton;
 
     private static final Log logger = LogFactory.get();
     private static HttpRequestForm httpRequestForm;
@@ -134,6 +135,7 @@ public class HttpRequestForm {
         httpRequestForm.getHistoryButton().setIcon(new FlatSVGIcon("icon/history.svg"));
         httpRequestForm.getDeleteHistoryButton().setIcon(new FlatSVGIcon("icon/remove.svg"));
         httpRequestForm.getCloseHistoryLabel().setIcon(new FlatSVGIcon("icon/remove2.svg"));
+        httpRequestForm.getBodyFormatButton().setIcon(new FlatSVGIcon("icon/format_painter.svg"));
 
         // 将尾随组件按钮添加到 URL 字段以导入 cURL
         httpRequestForm.importCurlButton = new JButton("CURL");
@@ -154,47 +156,12 @@ public class HttpRequestForm {
         httpRequestForm.getHistoryPanel().setVisible(false);
 
         httpRequestForm.getHttpRequestPanel().updateUI();
-
-        // 将正文格式按钮添加到“正文”选项卡中（替换右上角的间隔符）
-        try {
-            int bodyTabIndex = httpRequestForm.getTabbedPane1().indexOfTab("Body");
-            if (bodyTabIndex >= 0) {
-                Component tabComp = httpRequestForm.getTabbedPane1().getComponentAt(bodyTabIndex);
-                if (tabComp instanceof JPanel) {
-                    JPanel panel17 = (JPanel) tabComp;
-                    if (panel17.getComponentCount() > 0 && panel17.getComponent(0) instanceof JPanel) {
-                        JPanel panel18 = (JPanel) panel17.getComponent(0);
-                        // remove spacer in (0,1) if exists
-                        for (Component c : panel18.getComponents()) {
-                            if (c instanceof Spacer) {
-                                panel18.remove(c);
-                                break;
-                            }
-                        }
-                        httpRequestForm.bodyFormatButton = new JButton();
-                        httpRequestForm.bodyFormatButton.setToolTipText("格式化 Body");
-                        httpRequestForm.bodyFormatButton.setIcon(new FlatSVGIcon("icon/format_painter.svg"));
-                        panel18.add(httpRequestForm.bodyFormatButton,
-                                new GridConstraints(0, 1, 1, 1,
-                                        GridConstraints.ANCHOR_CENTER,
-                                        GridConstraints.FILL_NONE,
-                                        GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW,
-                                        GridConstraints.SIZEPOLICY_FIXED,
-                                        null, null, null, 0, false));
-                        panel18.revalidate();
-                        panel18.repaint();
-                    }
-                }
-            }
-        } catch (Exception ignore) {
-            // ignore safe
-        }
     }
 
     /**
      * 将导入的请求信息应用到表单
      */
-    public static void applyImportedRequest(com.luoboduner.moo.tool.util.CurlParserUtil.CurlResult r) {
+    public static void applyImportedRequest(CurlParserUtil.CurlResult r) {
         if (r == null) {
             return;
         }
@@ -218,7 +185,7 @@ public class HttpRequestForm {
         initHeaderTable();
         DefaultTableModel headerModel = (DefaultTableModel) getInstance().getHeaderTable().getModel();
         if (r.getHeaders() != null) {
-            for (com.luoboduner.moo.tool.util.CurlParserUtil.NameValue h : r.getHeaders()) {
+            for (CurlParserUtil.NameValue h : r.getHeaders()) {
                 headerModel.addRow(new Object[]{h.getName(), h.getValue()});
             }
         }
@@ -227,7 +194,7 @@ public class HttpRequestForm {
         initCookieTable();
         DefaultTableModel cookieModel = (DefaultTableModel) getInstance().getCookieTable().getModel();
         if (r.getCookies() != null) {
-            for (com.luoboduner.moo.tool.util.CurlParserUtil.NameValue c : r.getCookies()) {
+            for (CurlParserUtil.NameValue c : r.getCookies()) {
                 cookieModel.addRow(new Object[]{c.getName(), c.getValue(), "", "", ""});
             }
         }
@@ -292,8 +259,8 @@ public class HttpRequestForm {
                 value = "";
             }
             try {
-                name = java.net.URLDecoder.decode(name, "UTF-8");
-                value = java.net.URLDecoder.decode(value, "UTF-8");
+                name = URLDecoder.decode(name, "UTF-8");
+                value = URLDecoder.decode(value, "UTF-8");
             } catch (Exception e) {
                 logger.error(e.toString());
             }
@@ -945,7 +912,7 @@ public class HttpRequestForm {
         panel17.setLayout(new GridLayoutManager(1, 1, new Insets(10, 0, 0, 0), -1, -1));
         tabbedPane1.addTab("Body", panel17);
         final JPanel panel18 = new JPanel();
-        panel18.setLayout(new GridLayoutManager(2, 2, new Insets(5, 0, 0, 0), -1, -1));
+        panel18.setLayout(new GridLayoutManager(2, 3, new Insets(5, 0, 0, 0), -1, -1));
         panel17.add(panel18, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
         bodyTypeComboBox = new JComboBox();
         final DefaultComboBoxModel defaultComboBoxModel2 = new DefaultComboBoxModel();
@@ -958,11 +925,15 @@ public class HttpRequestForm {
         bodyTypeComboBox.setModel(defaultComboBoxModel2);
         panel18.add(bodyTypeComboBox, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         final Spacer spacer2 = new Spacer();
-        panel18.add(spacer2, new GridConstraints(0, 1, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, 1, null, null, null, 0, false));
+        panel18.add(spacer2, new GridConstraints(0, 2, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, 1, null, null, null, 0, false));
         final JScrollPane scrollPane7 = new JScrollPane();
-        panel18.add(scrollPane7, new GridConstraints(1, 0, 1, 2, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_WANT_GROW, null, null, null, 0, false));
+        panel18.add(scrollPane7, new GridConstraints(1, 0, 1, 3, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_WANT_GROW, null, null, null, 0, false));
         bodyTextArea = new JTextArea();
         scrollPane7.setViewportView(bodyTextArea);
+        bodyFormatButton = new JButton();
+        bodyFormatButton.setText("");
+        bodyFormatButton.setToolTipText("格式化 Body");
+        panel18.add(bodyFormatButton, new GridConstraints(0, 1, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         final Spacer spacer3 = new Spacer();
         panel2.add(spacer3, new GridConstraints(1, 1, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_VERTICAL, 1, GridConstraints.SIZEPOLICY_WANT_GROW, null, null, null, 0, false));
         historyPanel = new JPanel();
