@@ -20,6 +20,9 @@ import java.nio.charset.StandardCharsets;
 @Slf4j
 public class BingTranslatorUtil implements Translator {
 
+    // Bing Translator API endpoint identifier
+    private static final String BING_TRANSLATOR_IID = "translator.5028.1";
+
     /**
      * @param word
      * @param sourceLanguage 源语言 默认auto 英文为 en
@@ -43,9 +46,10 @@ public class BingTranslatorUtil implements Translator {
             sourceLanguage = convertToBingLanguageCode(sourceLanguage);
             targetLanguage = convertToBingLanguageCode(targetLanguage);
             
+            // Note: IG parameter format may need adjustment based on actual Bing API requirements
             String url = "https://www.bing.com/ttranslatev3?isVertical=1" +
                     "&IG=" + System.currentTimeMillis() +
-                    "&IID=translator.5028.1";
+                    "&IID=" + BING_TRANSLATOR_IID;
 
             URL obj = new URL(url);
             HttpURLConnection con = (HttpURLConnection) obj.openConnection();
@@ -139,6 +143,10 @@ public class BingTranslatorUtil implements Translator {
 
     private String parseResult(String inputJson) {
         try {
+            if (StringUtils.isEmpty(inputJson)) {
+                return "翻译返回结果为空";
+            }
+            
             JSONArray jsonArray = new JSONArray(inputJson);
             if (jsonArray.size() > 0) {
                 JSONObject firstItem = jsonArray.getJSONObject(0);
@@ -146,11 +154,14 @@ public class BingTranslatorUtil implements Translator {
                     JSONArray translations = firstItem.getJSONArray("translations");
                     if (translations.size() > 0) {
                         JSONObject translation = translations.getJSONObject(0);
-                        return translation.getStr("text");
+                        String result = translation.getStr("text");
+                        if (!StringUtils.isEmpty(result)) {
+                            return result;
+                        }
                     }
                 }
             }
-            return "解析翻译结果失败";
+            return "解析翻译结果失败，返回格式不符合预期";
         } catch (Exception e) {
             log.error("解析翻译结果异常", e);
             return "解析翻译结果异常：" + e.getMessage();

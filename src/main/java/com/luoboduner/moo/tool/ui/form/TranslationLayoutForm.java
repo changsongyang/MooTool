@@ -209,7 +209,18 @@ public class TranslationLayoutForm {
             translatorType = TranslatorFactory.TranslatorType.GOOGLE;
         }
 
-        String result = TranslatorFactory.getTranslator(translatorType).translate(text, Translator.languageNameToCodeMap.get(sourceLanguage), Translator.languageNameToCodeMap.get(targetLanguage));
+        // Get language codes, with fallback for null values
+        String sourceLangCode = Translator.languageNameToCodeMap.get(sourceLanguage);
+        String targetLangCode = Translator.languageNameToCodeMap.get(targetLanguage);
+        
+        if (sourceLangCode == null) {
+            sourceLangCode = "auto"; // Default to auto-detect
+        }
+        if (targetLangCode == null) {
+            targetLangCode = "zh-CN"; // Default to Simplified Chinese
+        }
+
+        String result = TranslatorFactory.getTranslator(translatorType).translate(text, sourceLangCode, targetLangCode);
 
         textArea2.setText(result);
     }
