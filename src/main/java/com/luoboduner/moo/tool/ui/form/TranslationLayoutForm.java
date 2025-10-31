@@ -4,6 +4,7 @@ import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.intellij.uiDesigner.core.GridConstraints;
 import com.intellij.uiDesigner.core.GridLayoutManager;
 import com.intellij.uiDesigner.core.Spacer;
+import com.luoboduner.moo.tool.util.ConfigUtil;
 import com.luoboduner.moo.tool.util.UndoUtil;
 import com.luoboduner.moo.tool.util.translator.Translator;
 import com.luoboduner.moo.tool.util.translator.TranslatorFactory;
@@ -28,6 +29,7 @@ public class TranslationLayoutForm {
     private JComboBox comboBox1;
     private JButton exchangeButton;
     private JComboBox comboBox2;
+    private JComboBox translatorComboBox;
 
     private static AtomicInteger changeCount = new AtomicInteger(0);
 
@@ -49,10 +51,29 @@ public class TranslationLayoutForm {
         defaultComboBoxModel2.addElement("英语");
         comboBox2.setModel(defaultComboBoxModel2);
 
+        translatorComboBox = new JComboBox();
+        final DefaultComboBoxModel translatorComboBoxModel = new DefaultComboBoxModel();
+        translatorComboBoxModel.addElement("Google翻译");
+        translatorComboBoxModel.addElement("Bing翻译");
+        translatorComboBoxModel.addElement("微软翻译");
+        translatorComboBox.setModel(translatorComboBoxModel);
+        // Load saved translator preference
+        String savedTranslator = ConfigUtil.getInstance().getTranslatorType();
+        if ("MICROSOFT".equals(savedTranslator)) {
+            translatorComboBox.setSelectedItem("微软翻译");
+        } else if ("BING".equals(savedTranslator)) {
+            translatorComboBox.setSelectedItem("Bing翻译");
+        } else {
+            translatorComboBox.setSelectedItem("Google翻译");
+        }
+
         leftMenuToolBar = new JToolBar();
         leftMenuToolBar.add(comboBox1);
         leftMenuToolBar.add(exchangeButton);
         leftMenuToolBar.add(comboBox2);
+        leftMenuToolBar.addSeparator();
+        leftMenuToolBar.add(new JLabel("翻译源: "));
+        leftMenuToolBar.add(translatorComboBox);
 
         leftMenuPanel.add(leftMenuToolBar);
 
@@ -116,6 +137,22 @@ public class TranslationLayoutForm {
             }
         });
 
+        translatorComboBox.addItemListener(e -> {
+            if (e.getStateChange() == ItemEvent.SELECTED) {
+                String itemName = e.getItem().toString();
+                String translatorType;
+                if ("Google翻译".equals(itemName)) {
+                    translatorType = "GOOGLE";
+                } else if ("Bing翻译".equals(itemName)) {
+                    translatorType = "BING";
+                } else {
+                    translatorType = "MICROSOFT";
+                }
+                ConfigUtil.getInstance().setTranslatorType(translatorType);
+                translateControl();
+            }
+        });
+
         textArea1.getDocument().addDocumentListener(new DocumentListener() {
             @Override
             public void insertUpdate(DocumentEvent e) {
@@ -155,8 +192,18 @@ public class TranslationLayoutForm {
         String targetLanguage = comboBox2.getSelectedItem().toString();
         String text = textArea1.getText();
 
+        // Get the selected translator type from config
+        String translatorTypeStr = ConfigUtil.getInstance().getTranslatorType();
+        TranslatorFactory.TranslatorType translatorType = TranslatorFactory.TranslatorType.GOOGLE;
+        try {
+            translatorType = TranslatorFactory.TranslatorType.valueOf(translatorTypeStr);
+        } catch (IllegalArgumentException e) {
+            // Default to GOOGLE if invalid
+            translatorType = TranslatorFactory.TranslatorType.GOOGLE;
+        }
+
         TranslatorFactory translatorFactory = new TranslatorFactory();
-        String result = translatorFactory.getTranslator(TranslatorFactory.TranslatorType.GOOGLE).translate(text, Translator.languageNameToCodeMap.get(sourceLanguage), Translator.languageNameToCodeMap.get(targetLanguage));
+        String result = translatorFactory.getTranslator(translatorType).translate(text, Translator.languageNameToCodeMap.get(sourceLanguage), Translator.languageNameToCodeMap.get(targetLanguage));
 
         textArea2.setText(result);
     }
