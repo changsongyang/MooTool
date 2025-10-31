@@ -20,7 +20,11 @@ import java.nio.charset.StandardCharsets;
 @Slf4j
 public class BingTranslatorUtil implements Translator {
 
-    // Bing Translator API endpoint identifier
+    /**
+     * Bing Translator API endpoint identifier
+     * This value is used by the Bing Translator public API
+     * It may need to be updated if Bing changes their API
+     */
     private static final String BING_TRANSLATOR_IID = "translator.5028.1";
 
     /**
@@ -46,7 +50,12 @@ public class BingTranslatorUtil implements Translator {
             sourceLanguage = convertToBingLanguageCode(sourceLanguage);
             targetLanguage = convertToBingLanguageCode(targetLanguage);
             
-            // Note: IG parameter format may need adjustment based on actual Bing API requirements
+            /**
+             * Build Bing Translator API URL
+             * IG parameter: Uses current timestamp, may need adjustment based on actual API requirements
+             * IID parameter: Fixed identifier for translator endpoint
+             * Note: This uses Bing's public translator endpoint which may change over time
+             */
             String url = "https://www.bing.com/ttranslatev3?isVertical=1" +
                     "&IG=" + System.currentTimeMillis() +
                     "&IID=" + BING_TRANSLATOR_IID;

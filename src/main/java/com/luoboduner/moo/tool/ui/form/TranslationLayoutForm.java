@@ -63,6 +63,7 @@ public class TranslationLayoutForm {
         translatorComboBoxModel.addElement(TRANSLATOR_BING);
         translatorComboBoxModel.addElement(TRANSLATOR_MICROSOFT);
         translatorComboBox.setModel(translatorComboBoxModel);
+        translatorComboBox.setToolTipText("选择翻译源。注意：微软翻译暂时回退到Google翻译");
         // Load saved translator preference
         String savedTranslator = ConfigUtil.getInstance().getTranslatorType();
         if ("MICROSOFT".equals(savedTranslator)) {
