@@ -52,14 +52,9 @@ public class BingTranslatorUtil implements Translator {
             
             /**
              * Build Bing Translator API URL
-             * The IG and IID parameters are required by Bing's translator API
-             * IG: timestamp-based parameter
-             * IID: translator version identifier
+             * Note: Bing's translator API requires specific parameters
              */
-            String ig = String.valueOf(System.currentTimeMillis() / 1000);
-            String url = "https://www.bing.com/ttranslatev3?isVertical=1" +
-                    "&IG=" + ig +
-                    "&IID=" + BING_TRANSLATOR_IID;
+            String url = "https://www.bing.com/ttranslatev3";
 
             URL obj = new URL(url);
             HttpURLConnection con = (HttpURLConnection) obj.openConnection();
