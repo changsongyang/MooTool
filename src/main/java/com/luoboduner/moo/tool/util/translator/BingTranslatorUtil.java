@@ -88,16 +88,21 @@ public class BingTranslatorUtil implements Translator {
             if (responseCode != 200) {
                 // Try to read error stream for more details
                 StringBuilder errorResponse = new StringBuilder();
-                try (BufferedReader errorReader = new BufferedReader(
-                        new InputStreamReader(con.getErrorStream(), StandardCharsets.UTF_8))) {
-                    String line;
-                    while ((line = errorReader.readLine()) != null) {
-                        errorResponse.append(line);
+                try {
+                    java.io.InputStream errorStream = con.getErrorStream();
+                    if (errorStream != null) {
+                        try (BufferedReader errorReader = new BufferedReader(
+                                new InputStreamReader(errorStream, StandardCharsets.UTF_8))) {
+                            String line;
+                            while ((line = errorReader.readLine()) != null) {
+                                errorResponse.append(line);
+                            }
+                        }
                     }
                 } catch (Exception ex) {
                     log.warn("Failed to read error stream", ex);
                 }
-                log.warn("Bing API error response: {}", errorResponse);
+                log.warn("Bing API error response (code {}): {}", responseCode, errorResponse);
                 return "Bing翻译接口返回错误状态码: " + responseCode;
             }
 
