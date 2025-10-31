@@ -52,12 +52,13 @@ public class BingTranslatorUtil implements Translator {
             
             /**
              * Build Bing Translator API URL
-             * IG parameter: Uses current timestamp, may need adjustment based on actual API requirements
-             * IID parameter: Fixed identifier for translator endpoint
-             * Note: This uses Bing's public translator endpoint which may change over time
+             * The IG and IID parameters are required by Bing's translator API
+             * IG: timestamp-based parameter
+             * IID: translator version identifier
              */
+            String ig = String.valueOf(System.currentTimeMillis() / 1000);
             String url = "https://www.bing.com/ttranslatev3?isVertical=1" +
-                    "&IG=" + System.currentTimeMillis() +
+                    "&IG=" + ig +
                     "&IID=" + BING_TRANSLATOR_IID;
 
             URL obj = new URL(url);
@@ -65,18 +66,43 @@ public class BingTranslatorUtil implements Translator {
             con.setRequestMethod("POST");
             con.setConnectTimeout(10000);
             con.setReadTimeout(10000);
-            con.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
+            con.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 Edg/120.0.0.0");
             con.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
             con.setRequestProperty("Referer", "https://www.bing.com/translator");
+            con.setRequestProperty("Origin", "https://www.bing.com");
+            con.setRequestProperty("Accept", "*/*");
+            con.setRequestProperty("Accept-Language", "en-US,en;q=0.9");
             con.setDoOutput(true);
 
             String postData = "fromLang=" + sourceLanguage +
                     "&to=" + targetLanguage +
                     "&text=" + URLEncoder.encode(word, StandardCharsets.UTF_8);
 
+            log.debug("Bing translation request - from: {}, to: {}, text: {}", sourceLanguage, targetLanguage, word);
+
             // Write request body with proper resource management
             try (java.io.OutputStream os = con.getOutputStream()) {
                 os.write(postData.getBytes(StandardCharsets.UTF_8));
+            }
+
+            // Check response code
+            int responseCode = con.getResponseCode();
+            log.debug("Bing API response code: {}", responseCode);
+            
+            if (responseCode != 200) {
+                // Try to read error stream for more details
+                StringBuilder errorResponse = new StringBuilder();
+                try (BufferedReader errorReader = new BufferedReader(
+                        new InputStreamReader(con.getErrorStream(), StandardCharsets.UTF_8))) {
+                    String line;
+                    while ((line = errorReader.readLine()) != null) {
+                        errorResponse.append(line);
+                    }
+                } catch (Exception ex) {
+                    log.warn("Failed to read error stream", ex);
+                }
+                log.warn("Bing API error response: {}", errorResponse);
+                return "Bing翻译接口返回错误状态码: " + responseCode;
             }
 
             // Read response with proper resource management
@@ -89,7 +115,12 @@ public class BingTranslatorUtil implements Translator {
                 }
             }
             
-            return parseResult(response.toString());
+            String responseStr = response.toString();
+            if (responseStr.isEmpty()) {
+                log.warn("Bing API returned empty response body despite 200 status code");
+            }
+            
+            return parseResult(responseStr);
         } catch (SSLHandshakeException e) {
             log.error("SSLHandshakeException", e);
             return "访问Bing翻译接口网络异常：" + e.getMessage();
@@ -156,8 +187,11 @@ public class BingTranslatorUtil implements Translator {
     private String parseResult(String inputJson) {
         try {
             if (StringUtils.isEmpty(inputJson)) {
+                log.warn("Bing API returned empty response");
                 return "翻译返回结果为空";
             }
+            
+            log.debug("Bing API response: {}", inputJson);
             
             JSONArray jsonArray = new JSONArray(inputJson);
             if (jsonArray.size() > 0) {
@@ -173,9 +207,10 @@ public class BingTranslatorUtil implements Translator {
                     }
                 }
             }
+            log.warn("Bing API response format unexpected: {}", inputJson);
             return "解析翻译结果失败，返回格式不符合预期";
         } catch (Exception e) {
-            log.error("解析翻译结果异常", e);
+            log.error("解析翻译结果异常，原始响应: {}", inputJson, e);
             return "解析翻译结果异常：" + e.getMessage();
         }
     }
