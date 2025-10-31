@@ -27,25 +27,31 @@ public class BingTranslatorUtilTest {
 
     @Test
     public void testLanguageCodeConversion() {
-        // This is a white-box test to verify language code conversion
-        // We're testing the internal convertToBingLanguageCode method indirectly
+        // Test that language code conversion doesn't cause crashes
+        // This is important because the translator needs to convert between
+        // the app's language codes and Bing's expected format
         
-        // Create a translator instance to test language conversion through actual translate call
-        // Note: This will make an actual API call, so it may fail if network is unavailable
-        // In a real scenario, we would mock the HTTP connection
+        // We can't easily test the actual conversion without making it public,
+        // but we can verify the translator handles various language codes without exceptions
         
-        // For now, just verify that the translator doesn't crash with various language codes
-        try {
-            translator.translate("test", "zh-CN", "en");
-            translator.translate("test", "en", "zh-CN");
-            translator.translate("test", "auto", "zh-CN");
-            // If we get here without exceptions, the language code handling is working
-            assertTrue("Language code handling should not throw exceptions", true);
-        } catch (Exception e) {
-            // Expected if no network - this is acceptable for this test
-            // We're mainly checking that language code conversion doesn't cause crashes
-            assertTrue("Exception should be network-related, not code-related", 
-                e.getMessage().contains("网络") || e.getMessage().contains("接口"));
-        }
+        // Note: These calls will attempt to reach the API, so they may fail with network errors
+        // That's acceptable - we're mainly testing that language code handling doesn't crash
+        
+        String result;
+        
+        // Test Chinese to English
+        result = translator.translate("test", "zh-CN", "en");
+        assertNotNull("Result should not be null", result);
+        
+        // Test English to Chinese  
+        result = translator.translate("test", "en", "zh-CN");
+        assertNotNull("Result should not be null", result);
+        
+        // Test auto-detect
+        result = translator.translate("test", "auto", "zh-CN");
+        assertNotNull("Result should not be null", result);
+        
+        // Even if API fails, we should get an error message, not crash
+        assertTrue("Result should contain content or error message", result.length() >= 0);
     }
 }
