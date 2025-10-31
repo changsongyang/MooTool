@@ -51,10 +51,11 @@ public class BingTranslatorUtil implements Translator {
             targetLanguage = convertToBingLanguageCode(targetLanguage);
             
             /**
-             * Build Bing Translator API URL
-             * Note: Bing's translator API requires specific parameters
+             * Build Bing Translator API URL with required parameters
+             * The IG and IID parameters are required by Bing Translator API
              */
-            String url = "https://www.bing.com/ttranslatev3";
+            String url = "https://www.bing.com/ttranslatev3?isVertical=1&IG=" + 
+                    generateIG() + "&IID=" + BING_TRANSLATOR_IID;
 
             URL obj = new URL(url);
             HttpURLConnection con = (HttpURLConnection) obj.openConnection();
@@ -126,6 +127,18 @@ public class BingTranslatorUtil implements Translator {
             log.error("访问Bing翻译异常", e);
             return "访问Bing翻译接口异常：" + e.getMessage();
         }
+    }
+
+    /**
+     * Generate IG parameter for Bing Translator API
+     * This is a hash-like value that changes over time
+     * @return IG parameter value
+     */
+    private String generateIG() {
+        // Simple IG generation based on timestamp
+        // Format: hexadecimal string based on current time
+        long timestamp = System.currentTimeMillis();
+        return Long.toHexString(timestamp).toUpperCase();
     }
 
     private String convertToBingLanguageCode(String code) {
