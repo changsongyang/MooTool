@@ -51,7 +51,7 @@ public class BingTranslatorUtilTest {
         result = translator.translate("test", "auto", "zh-CN");
         assertNotNull("Result should not be null", result);
         
-        // Even if API fails, we should get an error message, not crash
-        assertTrue("Result should contain content or error message", result.length() >= 0);
+        // Even if API fails, we should get an error message, not crash or return null
+        assertNotNull("Result should not be null even on API failure", result);
     }
 }
