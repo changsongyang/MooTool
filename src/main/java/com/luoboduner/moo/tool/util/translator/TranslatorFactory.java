@@ -14,7 +14,9 @@ public class TranslatorFactory {
             case BING:
                 return new BingTranslatorUtil();
             case MICROSOFT:
-//                return new MicrosoftTranslatorUtil();
+                // Microsoft translator requires API key configuration
+                // Falling back to Google translator for now
+                return new GoogleTranslatorUtil();
             default:
                 throw new IllegalArgumentException("Unknown translator type: " + type);
         }

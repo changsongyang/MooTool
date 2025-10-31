@@ -34,6 +34,11 @@ public class TranslationLayoutForm {
 
     private static AtomicInteger changeCount = new AtomicInteger(0);
 
+    // Constants for translator names
+    private static final String TRANSLATOR_GOOGLE = "Google翻译";
+    private static final String TRANSLATOR_BING = "Bing翻译";
+    private static final String TRANSLATOR_MICROSOFT = "微软翻译";
+
     public TranslationLayoutForm() {
         exchangeButton = new JButton();
         exchangeButton.setIcon(new FlatSVGIcon("icon/exchange.svg"));
@@ -54,18 +59,18 @@ public class TranslationLayoutForm {
 
         translatorComboBox = new JComboBox();
         final DefaultComboBoxModel translatorComboBoxModel = new DefaultComboBoxModel();
-        translatorComboBoxModel.addElement("Google翻译");
-        translatorComboBoxModel.addElement("Bing翻译");
-        translatorComboBoxModel.addElement("微软翻译");
+        translatorComboBoxModel.addElement(TRANSLATOR_GOOGLE);
+        translatorComboBoxModel.addElement(TRANSLATOR_BING);
+        translatorComboBoxModel.addElement(TRANSLATOR_MICROSOFT);
         translatorComboBox.setModel(translatorComboBoxModel);
         // Load saved translator preference
         String savedTranslator = ConfigUtil.getInstance().getTranslatorType();
         if ("MICROSOFT".equals(savedTranslator)) {
-            translatorComboBox.setSelectedItem("微软翻译");
+            translatorComboBox.setSelectedItem(TRANSLATOR_MICROSOFT);
         } else if ("BING".equals(savedTranslator)) {
-            translatorComboBox.setSelectedItem("Bing翻译");
+            translatorComboBox.setSelectedItem(TRANSLATOR_BING);
         } else {
-            translatorComboBox.setSelectedItem("Google翻译");
+            translatorComboBox.setSelectedItem(TRANSLATOR_GOOGLE);
         }
 
         leftMenuToolBar = new JToolBar();
@@ -142,15 +147,18 @@ public class TranslationLayoutForm {
             if (e.getStateChange() == ItemEvent.SELECTED) {
                 String itemName = e.getItem().toString();
                 String translatorType;
-                if ("Google翻译".equals(itemName)) {
+                if (TRANSLATOR_GOOGLE.equals(itemName)) {
                     translatorType = "GOOGLE";
-                } else if ("Bing翻译".equals(itemName)) {
+                } else if (TRANSLATOR_BING.equals(itemName)) {
                     translatorType = "BING";
                 } else {
                     translatorType = "MICROSOFT";
                 }
                 ConfigUtil.getInstance().setTranslatorType(translatorType);
-                translateControl();
+                // Only translate if there's actual text to translate
+                if (!StringUtils.isEmpty(textArea1.getText())) {
+                    translateControl();
+                }
             }
         });
 

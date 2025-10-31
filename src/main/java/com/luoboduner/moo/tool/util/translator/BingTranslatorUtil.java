@@ -65,17 +65,20 @@ public class BingTranslatorUtil implements Translator {
                     "&to=" + targetLanguage +
                     "&text=" + URLEncoder.encode(word, StandardCharsets.UTF_8);
 
-            con.getOutputStream().write(postData.getBytes(StandardCharsets.UTF_8));
-
-            BufferedReader in = new BufferedReader(
-                    new InputStreamReader(con.getInputStream(), StandardCharsets.UTF_8));
-            String inputLine;
-            StringBuilder response = new StringBuilder();
-
-            while ((inputLine = in.readLine()) != null) {
-                response.append(inputLine);
+            // Write request body with proper resource management
+            try (java.io.OutputStream os = con.getOutputStream()) {
+                os.write(postData.getBytes(StandardCharsets.UTF_8));
             }
-            in.close();
+
+            // Read response with proper resource management
+            StringBuilder response = new StringBuilder();
+            try (BufferedReader in = new BufferedReader(
+                    new InputStreamReader(con.getInputStream(), StandardCharsets.UTF_8))) {
+                String inputLine;
+                while ((inputLine = in.readLine()) != null) {
+                    response.append(inputLine);
+                }
+            }
             
             return parseResult(response.toString());
         } catch (SSLHandshakeException e) {
