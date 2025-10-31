@@ -9,9 +9,9 @@ import javax.net.ssl.SSLHandshakeException;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
+import java.net.SocketTimeoutException;
 import java.net.URL;
 import java.net.URLEncoder;
-import java.net.http.HttpTimeoutException;
 import java.nio.charset.StandardCharsets;
 
 /**
@@ -77,8 +77,8 @@ public class BingTranslatorUtil implements Translator {
         } catch (SSLHandshakeException e) {
             log.error("SSLHandshakeException", e);
             return "访问Bing翻译接口网络异常：" + e.getMessage();
-        } catch (HttpTimeoutException e) {
-            log.error("HttpTimeoutException", e);
+        } catch (SocketTimeoutException e) {
+            log.error("SocketTimeoutException", e);
             return "访问Bing翻译接口超时：" + e.getMessage();
         } catch (Exception e) {
             log.error("访问Bing翻译异常", e);
@@ -137,7 +137,7 @@ public class BingTranslatorUtil implements Translator {
         }
     }
 
-    private static String parseResult(String inputJson) {
+    private String parseResult(String inputJson) {
         try {
             JSONArray jsonArray = new JSONArray(inputJson);
             if (jsonArray.size() > 0) {

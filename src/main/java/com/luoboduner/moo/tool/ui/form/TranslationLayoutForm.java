@@ -9,6 +9,7 @@ import com.luoboduner.moo.tool.util.UndoUtil;
 import com.luoboduner.moo.tool.util.translator.Translator;
 import com.luoboduner.moo.tool.util.translator.TranslatorFactory;
 import lombok.Getter;
+import org.apache.commons.lang3.StringUtils;
 
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
@@ -192,6 +193,12 @@ public class TranslationLayoutForm {
         String targetLanguage = comboBox2.getSelectedItem().toString();
         String text = textArea1.getText();
 
+        // Skip translation if text is empty
+        if (StringUtils.isEmpty(text)) {
+            textArea2.setText("");
+            return;
+        }
+
         // Get the selected translator type from config
         String translatorTypeStr = ConfigUtil.getInstance().getTranslatorType();
         TranslatorFactory.TranslatorType translatorType = TranslatorFactory.TranslatorType.GOOGLE;
@@ -202,8 +209,7 @@ public class TranslationLayoutForm {
             translatorType = TranslatorFactory.TranslatorType.GOOGLE;
         }
 
-        TranslatorFactory translatorFactory = new TranslatorFactory();
-        String result = translatorFactory.getTranslator(translatorType).translate(text, Translator.languageNameToCodeMap.get(sourceLanguage), Translator.languageNameToCodeMap.get(targetLanguage));
+        String result = TranslatorFactory.getTranslator(translatorType).translate(text, Translator.languageNameToCodeMap.get(sourceLanguage), Translator.languageNameToCodeMap.get(targetLanguage));
 
         textArea2.setText(result);
     }
